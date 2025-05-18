@@ -1,0 +1,91 @@
+src/
+├── main/
+│   ├── java/
+│   │   └── com/example/ecommerce/
+│   │       ├── EcommerceApplication.java
+│   │       ├── config/
+│   │       │   └── SwaggerConfig.java
+│   │       ├── controller/
+│   │       │   ├── AdminController.java
+│   │       │   └── UserController.java
+│   │       ├── dto/
+│   │       │   ├── ProductDto.java
+│   │       │   ├── PurchaseRequestDto.java
+│   │       │   └── ApiResponse.java
+│   │       ├── model/
+│   │       │   ├── Product.java
+│   │       │   ├── CartItem.java
+│   │       │   ├── UserSession.java
+│   │       │   └── enums/
+│   │       │       └── Role.java
+│   │       ├── service/
+│   │       │   ├── admin/
+│   │       │   │   ├── AdminService.java
+│   │       │   │   └── AdminServiceImpl.java
+│   │       │   ├── user/
+│   │       │   │   ├── CartService.java
+│   │       │   │   ├── PurchaseService.java
+│   │       │   │   ├── strategy/
+│   │       │   │   │   ├── CheckoutStrategy.java
+│   │       │   │   │   ├── DirectCheckoutStrategy.java
+│   │       │   │   │   ├── AllCartCheckoutStrategy.java
+│   │       │   │   │   └── SingleCartItemCheckoutStrategy.java
+│   │       │   ├── product/
+│   │       │   │   ├── ProductService.java
+│   │       │   │   └── ProductServiceImpl.java
+│   │       ├── util/
+│   │       │   ├── RoleValidator.java
+│   │       │   └── BudgetValidator.java
+│   └── resources/
+│       └── application.properties
+
+✅ service/admin/
+AdminService — ინტერფეისი
+
+AdminServiceImpl — პროდუქტის მენეჯმენტის პასუხისმგებელი
+
+✅ service/product/
+ProductService — ინტერფეისი
+
+ProductServiceImpl — პროდუქტის CRUD ოპერაციები
+
+✅ service/user/
+CartService — კალათის ლოგიკა
+
+PurchaseService — ყიდვის პროცესების ორგანიზატორი
+
+✅ service/user/strategy/ (Strategy Pattern)
+CheckoutStrategy — ინტერფეისი
+
+DirectCheckoutStrategy — კალათის გარეშე ყიდვა
+
+AllCartCheckoutStrategy — კალათის მთლიანად ყიდვა
+
+SingleCartItemCheckoutStrategy — კონკრეტული ელემენტის ყიდვა კალათიდან
+
+✅ util/
+RoleValidator — ავტორიზაცია
+
+BudgetValidator — ბიუჯეტის შემოწმება
+
+✅ model/enums/
+Role — ADMIN / USER ენამი
+
+✅ controller/
+AdminController — პროდუქტების მართვა (მხოლოდ ADMIN)
+
+UserController — კალათა და ყიდვა (მხოლოდ USER)
+
+✅ model/
+Product — პროდუქტის მოდელი (id, name, price, stock)
+
+CartItem — კალათის ელემენტი (product, quantity)
+
+UserSession — იუზერის მდგომარეობა (username, role, budget, cart)
+
+✅ dto/
+ProductDto — პროდუქტის გადაცემა კონტროლერისთვის
+
+PurchaseRequestDto — ყიდვის მოთხოვნა
+
+ApiResponse — სტანდარტული პასუხის ობიექტი

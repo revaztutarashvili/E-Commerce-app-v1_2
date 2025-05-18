@@ -1,0 +1,1668 @@
+1. pom.xml
+
+Add the necessary Spring Boot, Web, Test, and Swagger dependencies.
+
+XML
+
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.2.5</version> <relativePath/> </parent>
+    <groupId>com.example</groupId>
+    <artifactId>ecommerce</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>ecommerce</name>
+    <description>E-commerce Application</description>
+
+    <properties>
+        <java.version>17</java.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.5.2</version>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
+2. src/main/java/com/example/ecommerce/EcommerceApplication.java
+
+The main Spring Boot application class.
+
+Java
+
+package com.example.ecommerce;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
+
+@SpringBootApplication
+// Adjust component scan if necessary, though default should cover sub-packages
+@ComponentScan(basePackages = "com.example.ecommerce")
+public class EcommerceApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(EcommerceApplication.class, args);
+    }
+
+}
+3. src/main/java/com/example/ecommerce/config/SwaggerConfig.java
+
+Configuration for Swagger/OpenAPI. For Spring Boot 3+, springdoc-openapi is the standard.
+
+Java
+
+package com.example.ecommerce.config;
+
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class SwaggerConfig {
+
+    @Bean
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("E-commerce API")
+                        .version("1.0")
+                        .description("Simple E-commerce application API documentation"));
+    }
+}
+Note: After running the application, Swagger UI will be available at http://localhost:8080/swagger-ui.html (or /swagger-ui/index.html depending on springdoc version and configuration, check console output).
+
+4. src/main/java/com/example/ecommerce/model/enums/Role.java
+
+Enum for user roles.
+
+Java
+
+package com.example.ecommerce.model.enums;
+
+public enum Role {
+    ADMIN,
+    USER
+}
+5. src/main/java/com/example/ecommerce/model/Product.java
+
+Product entity model.
+
+Java
+
+package com.example.ecommerce.model;
+
+import java.util.Objects;
+
+public class Product {
+    private String id;
+    private String name;
+    private double price;
+    private int stock;
+
+    // Constructors
+    public Product() {
+    }
+
+    public Product(String id, String name, double price, int stock) {
+        this.id = id;
+        this.name = name;
+        this.price = price;
+        this.stock = stock;
+    }
+
+    // Getters and Setters
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
+    public void setPrice(double price) {
+        this.price = price;
+    }
+
+    public int getStock() {
+        return stock;
+    }
+
+    public void setStock(int stock) {
+        this.stock = stock;
+    }
+
+    // equals and hashCode based on ID for Map keys
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Product product = (Product) o;
+        return Objects.equals(id, product.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+}
+6. src/main/java/com/example/ecommerce/model/CartItem.java
+
+Model for an item in the user's cart.
+
+Java
+
+package com.example.ecommerce.model;
+
+public class CartItem {
+    private Product product;
+    private int quantity;
+
+    // Constructors
+    public CartItem() {
+    }
+
+    public CartItem(Product product, int quantity) {
+        this.product = product;
+        this.quantity = quantity;
+    }
+
+    // Getters and Setters
+    public Product getProduct() {
+        return product;
+    }
+
+    public void setProduct(Product product) {
+        this.product = product;
+    }
+
+    public int getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
+    }
+
+    // Convenience method to get total price for this item quantity
+    public double getTotalPrice() {
+        return product.getPrice() * quantity;
+    }
+}
+7. src/main/java/com/example/ecommerce/model/UserSession.java
+
+Model to hold in-memory user state (cart and budget). The key for storing this will be a combination of username and role.
+
+Java
+
+package com.example.ecommerce.model;
+
+import com.example.ecommerce.model.enums.Role;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class UserSession {
+    private String username;
+    private Role role;
+    private double budget;
+    private Map<String, CartItem> cart; // Key: product ID
+
+    // Constructor
+    public UserSession(String username, Role role) {
+        this.username = username;
+        this.role = role;
+        this.budget = 1000.0; // Initial budget
+        this.cart = new HashMap<>(); // Initialize empty cart
+    }
+
+    // Getters and Setters
+    public String getUsername() {
+        return username;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public double getBudget() {
+        return budget;
+    }
+
+    public void setBudget(double budget) {
+        this.budget = budget;
+    }
+
+    public Map<String, CartItem> getCart() {
+        return cart;
+    }
+
+    public void setCart(Map<String, CartItem> cart) {
+        this.cart = cart;
+    }
+
+    // Helper method to generate map key
+    public static String generateKey(String username, Role role) {
+        return role.name() + ":" + username;
+    }
+}
+8. src/main/java/com/example/ecommerce/dto/ProductDto.java
+
+DTO for transferring product data.
+
+Java
+
+package com.example.ecommerce.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
+public class ProductDto {
+    @Schema(description = "Product unique identifier (admin assigned)", example = "prod-123")
+    private String id;
+    @Schema(description = "Product name", example = "Laptop")
+    private String name;
+    @Schema(description = "Product price", example = "1200.50")
+    private double price;
+    @Schema(description = "Available stock quantity", example = "50")
+    private int stock;
+
+    // Constructors
+    public ProductDto() {
+    }
+
+    public ProductDto(String id, String name, double price, int stock) {
+        this.id = id;
+        this.name = name;
+        this.price = price;
+        this.stock = stock;
+    }
+
+    // Getters and Setters
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
+    public void setPrice(double price) {
+        this.price = price;
+    }
+
+    public int getStock() {
+        return stock;
+    }
+
+    public void setStock(int stock) {
+        this.stock = stock;
+    }
+}
+9. src/main/java/com/example/ecommerce/dto/PurchaseRequestDto.java
+
+DTO for purchase requests. Designed to be flexible for different checkout strategies.
+
+Java
+
+package com.example.ecommerce.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
+public class PurchaseRequestDto {
+    @Schema(description = "Product ID (Required for direct checkout and single item checkout from cart)", example = "prod-123", required = false)
+    private String productId; // Used for direct checkout or single item checkout
+
+    @Schema(description = "Quantity (Required for direct checkout and single item checkout from cart)", example = "1", required = false)
+    private Integer quantity; // Used for direct checkout or single item checkout
+
+    // Note: For 'checkout all cart',productId and quantity might not be needed in the request body,
+    // the endpoint itself implies buying everything.
+    // For 'checkout single item from cart', productId and quantity are needed to specify WHICH item and HOW MANY.
+
+    // Constructors
+    public PurchaseRequestDto() {
+    }
+
+    public PurchaseRequestDto(String productId, int quantity) {
+        this.productId = productId;
+        this.quantity = quantity;
+    }
+
+    // Getters and Setters
+    public String getProductId() {
+        return productId;
+    }
+
+    public void setProductId(String productId) {
+        this.productId = productId;
+    }
+
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
+    }
+
+    // Helper to check if this looks like a direct purchase request
+    public boolean isDirectPurchase() {
+        return productId != null && quantity != null && quantity > 0;
+    }
+
+    // Helper to check if this looks like a single item purchase from cart (assuming productId and quantity specify which item)
+    public boolean isSingleCartItemPurchase() {
+         // This needs clarification in requirements - how to identify a single item from cart in the request?
+         // Let's assume for simplicity, if productId and quantity are present, AND the endpoint used is not /checkout/now,
+         // it implies a single item from cart. A more robust way would be a cartItemId.
+         // Let's stick to productId + quantity for now and rely on endpoint context.
+         return productId != null && quantity != null && quantity > 0;
+    }
+}
+Note: The PurchaseRequestDto logic for identifying strategy might need adjustment based on how the specific purchase endpoints are designed.
+
+10. src/main/java/com/example/ecommerce/dto/ApiResponse.java
+
+Standard response structure.
+
+Java
+
+package com.example.ecommerce.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import org.springframework.http.HttpStatus;
+
+public class ApiResponse<T> {
+    @Schema(description = "Indicates if the operation was successful")
+    private boolean success;
+    @Schema(description = "A message describing the outcome of the operation")
+    private String message;
+    @Schema(description = "The data payload, if any, returned by the operation")
+    private T data;
+
+    // Constructors
+    public ApiResponse() {
+    }
+
+    public ApiResponse(boolean success, String message) {
+        this.success = success;
+        this.message = message;
+    }
+
+    public ApiResponse(boolean success, String message, T data) {
+        this.success = success;
+        this.message = message;
+        this.data = data;
+    }
+
+    // Getters and Setters
+    public boolean isSuccess() {
+        return success;
+    }
+
+    public void setSuccess(boolean success) {
+        this.success = success;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public T getData() {
+        return data;
+    }
+
+    public void setData(T data) {
+        this.data = data;
+    }
+
+    // Static helper methods
+    public static <T> ApiResponse<T> success(String message, T data) {
+        return new ApiResponse<>(true, message, data);
+    }
+
+    public static <T> ApiResponse<T> success(String message) {
+        return new ApiResponse<>(true, message);
+    }
+
+    public static <T> ApiResponse<T> error(String message) {
+        return new ApiResponse<>(false, message);
+    }
+     public static <T> ApiResponse<T> error(String message, T data) {
+        return new ApiResponse<>(false, message, data);
+    }
+}
+11. src/main/java/com/example/ecommerce/util/RoleValidator.java
+
+Utility for validating user roles.
+
+Java
+
+package com.example.ecommerce.util;
+
+import com.example.ecommerce.model.enums.Role;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
+public class RoleValidator {
+
+    // Private constructor to prevent instantiation
+    private RoleValidator() {
+        throw new IllegalStateException("Utility class");
+    }
+
+    /**
+     * Validates if the provided role matches the required role.
+     * Throws ResponseStatusException (HTTP 403 Forbidden) if roles do not match.
+     *
+     * @param providedRole The role string provided in the request (e.g., "ADMIN", "USER").
+     * @param requiredRole The Role enum required for the operation.
+     */
+    public static void validateRole(String providedRole, Role requiredRole) {
+        if (providedRole == null || providedRole.trim().isEmpty()) {
+             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Role header 'X-User-Role' is required.");
+        }
+        try {
+            Role actualRole = Role.valueOf(providedRole.trim().toUpperCase());
+            if (actualRole != requiredRole) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient permissions. Required role: " + requiredRole.name());
+            }
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid role provided: " + providedRole + ". Allowed roles: ADMIN, USER.");
+        }
+    }
+}
+12. src/main/java/com/example/ecommerce/util/BudgetValidator.java
+
+Utility for checking user budget.
+
+Java
+
+package com.example.ecommerce.util;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
+public class BudgetValidator {
+
+    // Private constructor to prevent instantiation
+    private BudgetValidator() {
+        throw new IllegalStateException("Utility class");
+    }
+
+    /**
+     * Checks if the user's current budget is sufficient for the given cost.
+     * Throws ResponseStatusException (HTTP 400 Bad Request) if budget is insufficient.
+     *
+     * @param currentBudget The user's current budget.
+     * @param cost The total cost of the items to purchase.
+     */
+    public static void checkBudget(double currentBudget, double cost) {
+        if (cost < 0) {
+             throw new IllegalArgumentException("Cost cannot be negative.");
+        }
+        if (currentBudget < cost) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient budget. Current budget: " + currentBudget + ", Required: " + cost);
+        }
+    }
+}
+13. src/main/java/com/example/ecommerce/service/product/ProductService.java
+
+Interface for Product Service.
+
+Java
+
+package com.example.ecommerce.service.product;
+
+import com.example.ecommerce.model.Product;
+
+import java.util.List;
+
+public interface ProductService {
+    Product addProduct(Product product);
+    Product updateProduct(String id, Product productDetails);
+    void deleteProduct(String id);
+    Product getProductById(String id);
+    List<Product> getAllProducts();
+    boolean updateStock(String productId, int quantityChange); // Returns true if successful, false if product not found or stock goes negative
+    void checkStock(String productId, int quantity); // Throws exception if stock is insufficient
+}
+14. src/main/java/com/example/ecommerce/service/product/ProductServiceImpl.java
+
+Implementation of Product Service using an in-memory map. Uses ConcurrentHashMap for basic thread safety in a multi-request environment.
+
+Java
+
+package com.example.ecommerce.service.product;
+
+import com.example.ecommerce.model.Product;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+@Service
+public class ProductServiceImpl implements ProductService {
+
+    // In-memory storage for products
+    private final Map<String, Product> products = new ConcurrentHashMap<>();
+
+    // Add some initial data for testing
+    public ProductServiceImpl() {
+        products.put("prod-001", new Product("prod-001", "Laptop", 1200.50, 10));
+        products.put("prod-002", new Product("prod-002", "Mouse", 25.00, 200));
+        products.put("prod-003", new Product("prod-003", "Keyboard", 75.00, 50));
+    }
+
+    @Override
+    public Product addProduct(Product product) {
+        if (product.getId() == null || product.getId().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product ID is required.");
+        }
+         if (products.containsKey(product.getId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Product with ID " + product.getId() + " already exists.");
+        }
+        // Defensive copy
+        Product newProduct = new Product(product.getId(), product.getName(), product.getPrice(), product.getStock());
+        products.put(newProduct.getId(), newProduct);
+        return newProduct;
+    }
+
+    @Override
+    public Product updateProduct(String id, Product productDetails) {
+        Product existingProduct = products.get(id);
+        if (existingProduct == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product with ID " + id + " not found.");
+        }
+
+        // Update details - preserving the original product object in the map
+        synchronized (existingProduct) { // Synchronize on the product object if concurrent updates were a risk, but ConcurrentHashMap updates value atomically
+             // For atomic update within ConcurrentHashMap value:
+             products.computeIfPresent(id, (k, v) -> {
+                 v.setName(productDetails.getName());
+                 v.setPrice(productDetails.getPrice());
+                 v.setStock(productDetails.getStock());
+                 return v;
+             });
+        }
+
+        return products.get(id); // Return the updated product
+    }
+
+    @Override
+    public void deleteProduct(String id) {
+        if (!products.containsKey(id)) {
+             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product with ID " + id + " not found.");
+        }
+        products.remove(id);
+    }
+
+    @Override
+    public Product getProductById(String id) {
+        Product product = products.get(id);
+        if (product == null) {
+             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product with ID " + id + " not found.");
+        }
+        return product;
+    }
+
+    @Override
+    public List<Product> getAllProducts() {
+        return new ArrayList<>(products.values());
+    }
+
+    @Override
+    public synchronized boolean updateStock(String productId, int quantityChange) {
+         // Synchronize this method to prevent race conditions during stock updates
+        Product product = products.get(productId);
+        if (product == null) {
+            return false; // Product not found
+        }
+        int currentStock = product.getStock();
+        int newStock = currentStock + quantityChange; // quantityChange can be negative for purchase
+
+        if (newStock < 0) {
+            // This check should ideally happen *before* calling updateStock for purchases,
+            // but added here as a safeguard.
+            return false; // Insufficient stock
+        }
+
+        product.setStock(newStock); // Update the stock in the map's object
+        return true;
+    }
+
+    @Override
+    public void checkStock(String productId, int quantity) {
+        Product product = products.get(productId);
+        if (product == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product with ID " + productId + " not found.");
+        }
+        if (product.getStock() < quantity) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient stock for product " + product.getName() + ". Available: " + product.getStock() + ", Requested: " + quantity);
+        }
+    }
+}
+15. src/main/java/com/example/ecommerce/service/user/UserSessionService.java
+
+A simple service to manage in-memory user sessions. This centralizes access to the userSessions map.
+
+Java
+
+package com.example.ecommerce.service.user;
+
+import com.example.ecommerce.model.UserSession;
+import com.example.ecommerce.model.enums.Role;
+import org.springframework.stereotype.Service;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+@Service
+public class UserSessionService {
+
+    // In-memory storage for user sessions
+    // Key: Role:Username
+    private final Map<String, UserSession> userSessions = new ConcurrentHashMap<>();
+
+    /**
+     * Gets or creates a UserSession for a given username and role.
+     * @param username The username.
+     * @param role The user's role.
+     * @return The existing or newly created UserSession.
+     */
+    public UserSession getUserSession(String username, Role role) {
+        String key = UserSession.generateKey(username, role);
+        // computeIfAbsent is thread-safe
+        return userSessions.computeIfAbsent(key, k -> new UserSession(username, role));
+    }
+
+    /**
+     * Retrieves an existing UserSession. Returns null if not found.
+     * @param username The username.
+     * @param role The user's role.
+     * @return The existing UserSession or null.
+     */
+     public UserSession findUserSession(String username, Role role) {
+         String key = UserSession.generateKey(username, role);
+         return userSessions.get(key);
+     }
+}
+16. src/main/java/com/example/ecommerce/service/user/CartService.java
+
+Interface for Cart Service.
+
+Java
+
+package com.example.ecommerce.service.user;
+
+import com.example.ecommerce.model.CartItem;
+import java.util.Map;
+
+public interface CartService {
+    void addToCart(String username, String role, String productId, int quantity);
+    void removeFromCart(String username, String role, String productId, int quantity);
+    Map<String, CartItem> getUserCart(String username, String role);
+}
+17. src/main/java/com/example/ecommerce/service/user/CartServiceImpl.java
+
+Implementation of Cart Service. Interacts with UserSessionService and ProductService.
+
+Java
+
+package com.example.ecommerce.service.user;
+
+import com.example.ecommerce.model.CartItem;
+import com.example.ecommerce.model.Product;
+import com.example.ecommerce.model.UserSession;
+import com.example.ecommerce.model.enums.Role;
+import com.example.ecommerce.service.product.ProductService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Collections;
+import java.util.Map;
+
+@Service
+public class CartServiceImpl implements CartService {
+
+    private final UserSessionService userSessionService;
+    private final ProductService productService;
+
+    @Autowired
+    public CartServiceImpl(UserSessionService userSessionService, ProductService productService) {
+        this.userSessionService = userSessionService;
+        this.productService = productService;
+    }
+
+    @Override
+    public void addToCart(String username, String role, String productId, int quantity) {
+        if (quantity <= 0) {
+             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantity must be positive.");
+        }
+
+        UserSession userSession = userSessionService.getUserSession(username, Role.valueOf(role.toUpperCase()));
+        Product product = productService.getProductById(productId); // Throws NOT_FOUND if product doesn't exist
+
+        // Check if adding this quantity exceeds available stock
+        int currentCartQuantity = 0;
+        CartItem existingItem = userSession.getCart().get(productId);
+        if (existingItem != null) {
+            currentCartQuantity = existingItem.getQuantity();
+        }
+
+        if (product.getStock() < (currentCartQuantity + quantity)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot add " + quantity + " of product " + product.getName() + " to cart. Total in cart would exceed available stock (" + product.getStock() + ").");
+        }
+
+        // Add/Update item in cart
+        userSession.getCart().compute(productId, (k, v) -> {
+            if (v == null) {
+                return new CartItem(product, quantity);
+            } else {
+                v.setQuantity(v.getQuantity() + quantity);
+                return v;
+            }
+        });
+    }
+
+    @Override
+    public void removeFromCart(String username, String role, String productId, int quantity) {
+         if (quantity <= 0) {
+             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantity must be positive.");
+         }
+
+        UserSession userSession = userSessionService.getUserSession(username, Role.valueOf(role.toUpperCase()));
+        Map<String, CartItem> userCart = userSession.getCart();
+
+        CartItem existingItem = userCart.get(productId);
+        if (existingItem == null) {
+             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product with ID " + productId + " not found in your cart.");
+        }
+
+        int currentQuantity = existingItem.getQuantity();
+        if (quantity >= currentQuantity) {
+            // Remove the item completely if requested quantity is >= current quantity
+            userCart.remove(productId);
+        } else {
+            // Reduce the quantity
+            existingItem.setQuantity(currentQuantity - quantity);
+        }
+    }
+
+    @Override
+    public Map<String, CartItem> getUserCart(String username, String role) {
+        UserSession userSession = userSessionService.getUserSession(username, Role.valueOf(role.toUpperCase()));
+        // Return an unmodifiable map to prevent external modification
+        return Collections.unmodifiableMap(userSession.getCart());
+    }
+}
+18. src/main/java/com/example/ecommerce/service/user/strategy/CheckoutStrategy.java
+
+Interface for the Strategy Pattern.
+
+Java
+
+package com.example.ecommerce.service.user.strategy;
+
+import com.example.ecommerce.dto.ApiResponse;
+import com.example.ecommerce.dto.PurchaseRequestDto;
+import com.example.ecommerce.model.UserSession;
+import com.example.ecommerce.service.product.ProductService;
+import com.example.ecommerce.util.BudgetValidator;
+
+public interface CheckoutStrategy {
+
+    /**
+     * Determines if this strategy can handle the given purchase request.
+     * @param request The purchase request DTO.
+     * @param userSession The current user session.
+     * @return true if this strategy applies, false otherwise.
+     */
+    boolean canHandle(PurchaseRequestDto request, UserSession userSession);
+
+    /**
+     * Executes the checkout logic for this strategy.
+     * @param request The purchase request DTO.
+     * @param userSession The current user session.
+     * @param productService The product service to interact with stock.
+     * @param budgetValidator The budget validator utility.
+     * @return An ApiResponse indicating the result of the purchase.
+     */
+    ApiResponse execute(PurchaseRequestDto request, UserSession userSession, ProductService productService, BudgetValidator budgetValidator);
+}
+19. src/main/java/com/example/ecommerce/service/user/strategy/DirectCheckoutStrategy.java
+
+Strategy for direct purchase (checkout now).
+
+Java
+
+package com.example.ecommerce.service.user.strategy;
+
+import com.example.ecommerce.dto.ApiResponse;
+import com.example.ecommerce.dto.PurchaseRequestDto;
+import com.example.ecommerce.model.Product;
+import com.example.ecommerce.model.UserSession;
+import com.example.ecommerce.service.product.ProductService;
+import com.example.ecommerce.util.BudgetValidator;
+import org.springframework.stereotype.Component;
+
+@Component("directCheckoutStrategy") // Give it a specific name
+public class DirectCheckoutStrategy implements CheckoutStrategy {
+
+    @Override
+    public boolean canHandle(PurchaseRequestDto request, UserSession userSession) {
+        // This strategy handles requests that look like a direct purchase
+        return request != null && request.isDirectPurchase();
+    }
+
+    @Override
+    public ApiResponse execute(PurchaseRequestDto request, UserSession userSession, ProductService productService, BudgetValidator budgetValidator) {
+        String productId = request.getProductId();
+        int quantity = request.getQuantity();
+
+        // 1. Get product
+        Product product = productService.getProductById(productId); // Throws NOT_FOUND if missing
+
+        // 2. Check stock
+        productService.checkStock(productId, quantity); // Throws BAD_REQUEST if insufficient
+
+        // 3. Calculate cost
+        double totalCost = product.getPrice() * quantity;
+
+        // 4. Check budget
+        budgetValidator.checkBudget(userSession.getBudget(), totalCost); // Throws BAD_REQUEST if insufficient
+
+        // 5. Perform purchase actions (update budget and stock)
+        userSession.setBudget(userSession.getBudget() - totalCost);
+        // Note: updateStock returns boolean, but checkStock already verified availability.
+        // If updateStock fails here for some reason (e.g., product disappeared),
+        // it indicates a severe inconsistency, but we'll trust checkStock.
+        productService.updateStock(productId, -quantity); // Decrease stock
+
+        // 6. Return success response
+        return ApiResponse.success("Successfully purchased " + quantity + " of " + product.getName() + " directly. Remaining budget: " + userSession.getBudget());
+    }
+}
+20. src/main/java/com/example/ecommerce/service/user/strategy/AllCartCheckoutStrategy.java
+
+Strategy for purchasing all items in the cart.
+
+Java
+
+package com.example.ecommerce.service.user.strategy;
+
+import com.example.ecommerce.dto.ApiResponse;
+import com.example.ecommerce.dto.PurchaseRequestDto;
+import com.example.ecommerce.model.CartItem;
+import com.example.ecommerce.model.Product;
+import com.example.ecommerce.model.UserSession;
+import com.example.ecommerce.service.product.ProductService;
+import com.example.ecommerce.util.BudgetValidator;
+import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+
+import java.util.Map;
+
+@Component("allCartCheckoutStrategy") // Give it a specific name
+public class AllCartCheckoutStrategy implements CheckoutStrategy {
+
+    @Override
+    public boolean canHandle(PurchaseRequestDto request, UserSession userSession) {
+        // This strategy handles requests that signify buying the *entire* cart.
+        // Let's assume this is triggered when the request DTO is empty
+        // OR the endpoint specifically maps to this (like the /checkout endpoint).
+        // For simplicity here, we'll rely on the endpoint triggering this specific strategy bean.
+        // The PurchaseService will decide which strategy to use based on the endpoint/context.
+        // So, this `canHandle` will primarily be used by PurchaseService's logic to pick this strategy.
+        // It doesn't need to inspect the request DTO in a complex way if the endpoint dictates the strategy.
+         // Let's make it handle when request is null or empty, implying a general checkout request.
+         return request == null || (request.getProductId() == null && request.getQuantity() == null);
+    }
+
+    @Override
+    public ApiResponse execute(PurchaseRequestDto request, UserSession userSession, ProductService productService, BudgetValidator budgetValidator) {
+        Map<String, CartItem> userCart = userSession.getCart();
+
+        if (userCart.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Your cart is empty.");
+        }
+
+        double totalCost = 0;
+
+        // 1. Calculate total cost and perform stock checks for all items FIRST
+        for (Map.Entry<String, CartItem> entry : userCart.entrySet()) {
+            CartItem item = entry.getValue();
+            Product product = productService.getProductById(item.getProduct().getId()); // Ensure product still exists
+
+            // Check stock for the quantity in the cart
+            productService.checkStock(product.getId(), item.getQuantity()); // Throws if insufficient stock
+
+            totalCost += item.getTotalPrice();
+        }
+
+        // 2. Check total budget
+        budgetValidator.checkBudget(userSession.getBudget(), totalCost); // Throws if insufficient budget
+
+        // 3. Perform purchase actions (update budget and stock for all items, clear cart)
+        userSession.setBudget(userSession.getBudget() - totalCost);
+
+        for (Map.Entry<String, CartItem> entry : userCart.entrySet()) {
+            CartItem item = entry.getValue();
+            // Decrease stock for each item purchased
+            productService.updateStock(item.getProduct().getId(), -item.getQuantity());
+        }
+
+        // Clear the cart after successful purchase
+        userCart.clear();
+
+        // 4. Return success response
+        return ApiResponse.success("Successfully purchased all items in the cart. Total cost: " + totalCost + ". Remaining budget: " + userSession.getBudget());
+    }
+}
+21. src/main/java/com/example/ecommerce/service/user/strategy/SingleCartItemCheckoutStrategy.java
+
+Strategy for purchasing a specific item from the cart.
+
+Java
+
+package com.example.ecommerce.service.user.strategy;
+
+import com.example.ecommerce.dto.ApiResponse;
+import com.example.ecommerce.dto.PurchaseRequestDto;
+import com.example.ecommerce.model.CartItem;
+import com.example.ecommerce.model.Product;
+import com.example.ecommerce.model.UserSession;
+import com.example.ecommerce.service.product.ProductService;
+import com.example.ecommerce.util.BudgetValidator;
+import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+
+import java.util.Map;
+
+@Component("singleCartItemCheckoutStrategy") // Give it a specific name
+public class SingleCartItemCheckoutStrategy implements CheckoutStrategy {
+
+    @Override
+    public boolean canHandle(PurchaseRequestDto request, UserSession userSession) {
+         // This strategy handles requests that specify a particular product ID and quantity,
+         // implying a purchase of this specific item FROM THE CART (not a direct purchase).
+         // The PurchaseService will need to decide based on context (e.g., a specific endpoint or DTO structure).
+         // Let's assume this strategy is selected when productId and quantity are present
+         // AND the endpoint indicates a cart operation (handled by PurchaseService).
+         // For simplicity in `canHandle` here, we'll just check for productId and quantity existence.
+         return request != null && request.getProductId() != null && request.getQuantity() != null && request.getQuantity() > 0;
+    }
+
+    @Override
+    public ApiResponse execute(PurchaseRequestDto request, UserSession userSession, ProductService productService, BudgetValidator budgetValidator) {
+        String productId = request.getProductId();
+        int quantityToBuy = request.getQuantity();
+        Map<String, CartItem> userCart = userSession.getCart();
+
+        CartItem cartItem = userCart.get(productId);
+        if (cartItem == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product with ID " + productId + " not found in your cart.");
+        }
+
+        int quantityInCart = cartItem.getQuantity();
+        if (quantityToBuy > quantityInCart) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You only have " + quantityInCart + " of product " + cartItem.getProduct().getName() + " in your cart. Cannot buy " + quantityToBuy + ".");
+        }
+
+        Product product = cartItem.getProduct(); // Get the product details from the cart item
+
+        // 1. Check stock (against total stock, not just what's in cart)
+        // This is important: The quantity being purchased (quantityToBuy) must be available in overall stock.
+        // Although it's in the cart, stock might have decreased since adding.
+        productService.checkStock(product.getId(), quantityToBuy); // Throws BAD_REQUEST if insufficient
+
+        // 2. Calculate cost
+        double totalCost = product.getPrice() * quantityToBuy;
+
+        // 3. Check budget
+        budgetValidator.checkBudget(userSession.getBudget(), totalCost); // Throws BAD_REQUEST if insufficient
+
+        // 4. Perform purchase actions (update budget and stock, update/remove item from cart)
+        userSession.setBudget(userSession.getBudget() - totalCost);
+
+        // Decrease stock
+        productService.updateStock(product.getId(), -quantityToBuy);
+
+        // Update/remove item from cart
+        if (quantityToBuy == quantityInCart) {
+            userCart.remove(productId); // Remove item if buying all from cart
+        } else {
+            cartItem.setQuantity(quantityInCart - quantityToBuy); // Reduce quantity in cart
+        }
+
+        // 5. Return success response
+        return ApiResponse.success("Successfully purchased " + quantityToBuy + " of " + product.getName() + " from your cart. Remaining budget: " + userSession.getBudget());
+    }
+}
+22. src/main/java/com/example/ecommerce/service/user/PurchaseService.java
+
+Service orchestrating the checkout process using the Strategy Pattern.
+
+Java
+
+package com.example.ecommerce.service.user;
+
+import com.example.ecommerce.dto.ApiResponse;
+import com.example.ecommerce.dto.PurchaseRequestDto;
+import com.example.ecommerce.model.UserSession;
+import com.example.ecommerce.model.enums.Role;
+import com.example.ecommerce.service.product.ProductService;
+import com.example.ecommerce.service.user.strategy.CheckoutStrategy;
+import com.example.ecommerce.util.BudgetValidator;
+import com.example.ecommerce.util.RoleValidator;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
+
+@Service
+public class PurchaseService {
+
+    private final UserSessionService userSessionService;
+    private final ProductService productService;
+    private final BudgetValidator budgetValidator; // Although static, injecting can be cleaner
+    private final List<CheckoutStrategy> checkoutStrategies; // List of available strategies
+
+    @Autowired
+    public PurchaseService(UserSessionService userSessionService, ProductService productService, List<CheckoutStrategy> checkoutStrategies) {
+        this.userSessionService = userSessionService;
+        this.productService = productService;
+        this.budgetValidator = new BudgetValidator(); // Instantiate static utility (or just call static methods)
+        this.checkoutStrategies = checkoutStrategies;
+    }
+
+    /**
+     * Initiates a purchase process using the appropriate strategy.
+     * @param username The username.
+     * @param role The user's role (must be USER).
+     * @param request The purchase request details.
+     * @return ApiResponse indicating the purchase outcome.
+     */
+    public ApiResponse checkout(String username, String role, PurchaseRequestDto request) {
+        // Ensure the user is a USER
+        RoleValidator.validateRole(role, Role.USER);
+
+        // Get the user session (creates if it doesn't exist, though it should for a USER)
+        UserSession userSession = userSessionService.getUserSession(username, Role.USER);
+
+        // Find the appropriate strategy
+        for (CheckoutStrategy strategy : checkoutStrategies) {
+            if (strategy.canHandle(request, userSession)) {
+                // Execute the strategy
+                // Pass necessary dependencies to the strategy's execute method
+                return strategy.execute(request, userSession, productService, budgetValidator);
+            }
+        }
+
+        // If no strategy was found to handle the request
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Could not determine the correct checkout method for the provided request.");
+    }
+
+    // Dedicated method for "Checkout Now" to explicitly trigger that strategy
+     public ApiResponse checkoutNow(String username, String role, PurchaseRequestDto request) {
+         // Ensure the user is a USER
+         RoleValidator.validateRole(role, Role.USER);
+
+         if (request == null || !request.isDirectPurchase()) {
+             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid request for direct checkout.");
+         }
+
+         UserSession userSession = userSessionService.getUserSession(username, Role.USER);
+
+         // Explicitly find and use the DirectCheckoutStrategy
+         for (CheckoutStrategy strategy : checkoutStrategies) {
+             if (strategy instanceof DirectCheckoutStrategy) {
+                 return strategy.execute(request, userSession, productService, budgetValidator);
+             }
+         }
+
+         // Should not happen if DirectCheckoutStrategy is in the list, but defensive coding
+         throw new IllegalStateException("DirectCheckoutStrategy bean not found.");
+     }
+
+     // Dedicated method for "Checkout All Cart" to explicitly trigger that strategy
+      public ApiResponse checkoutAllCart(String username, String role) {
+          // Ensure the user is a USER
+          RoleValidator.validateRole(role, Role.USER);
+
+          UserSession userSession = userSessionService.getUserSession(username, Role.USER);
+
+          // Explicitly find and use the AllCartCheckoutStrategy
+          for (CheckoutStrategy strategy : checkoutStrategies) {
+              if (strategy instanceof AllCartCheckoutStrategy) {
+                  // Pass a null or empty request DTO as it's not needed for this strategy's logic
+                  return strategy.execute(null, userSession, productService, budgetValidator);
+              }
+          }
+           // Should not happen
+         throw new IllegalStateException("AllCartCheckoutStrategy bean not found.");
+      }
+
+      // Method for "Checkout Single Item from Cart"
+       public ApiResponse checkoutSingleCartItem(String username, String role, PurchaseRequestDto request) {
+           // Ensure the user is a USER
+           RoleValidator.validateRole(role, Role.USER);
+
+            if (request == null || !request.isSingleCartItemPurchase()) {
+                // This validation needs to align with how SingleCartItemCheckoutStrategy's canHandle works
+                // Let's rely on the strategy itself for the specifics of the request validation.
+                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid request for single item checkout from cart.");
+            }
+
+           UserSession userSession = userSessionService.getUserSession(username, Role.USER);
+
+           // Explicitly find and use the SingleCartItemCheckoutStrategy
+           for (CheckoutStrategy strategy : checkoutStrategies) {
+               if (strategy instanceof SingleCartItemCheckoutStrategy) {
+                   return strategy.execute(request, userSession, productService, budgetValidator);
+               }
+           }
+           // Should not happen
+           throw new IllegalStateException("SingleCartItemCheckoutStrategy bean not found.");
+       }
+}
+Note: Refined PurchaseService to have explicit methods for each checkout type (checkoutNow, checkoutAllCart, checkoutSingleCartItem) to make the controller mapping clearer and avoid complex canHandle logic just within the strategies based on DTO shape alone. The checkout method remains generic but might not be strictly needed depending on how the controllers map.
+
+23. src/main/java/com/example/ecommerce/controller/AdminController.java
+
+Controller for ADMIN operations (product management). Requires X-User-Role: ADMIN header.
+
+Java
+
+package com.example.ecommerce.controller;
+
+import com.example.ecommerce.dto.ApiResponse;
+import com.example.ecommerce.dto.ProductDto;
+import com.example.ecommerce.model.Product;
+import com.example.ecommerce.model.enums.Role;
+import com.example.ecommerce.service.product.ProductService;
+import com.example.ecommerce.util.RoleValidator;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@RestController
+@RequestMapping("/admin/products")
+@Tag(name = "Admin", description = "Admin Product Management API")
+public class AdminController {
+
+    private final ProductService productService;
+
+    @Autowired
+    public AdminController(ProductService productService) {
+        this.productService = productService;
+    }
+
+    @PostMapping
+    @Operation(summary = "Add a new product (Admin only)",
+               responses = {
+                   @SwaggerApiResponse(responseCode = "201", description = "Product added successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                   @SwaggerApiResponse(responseCode = "400", description = "Invalid product data or product ID missing", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                   @SwaggerApiResponse(responseCode = "403", description = "Forbidden (Requires ADMIN role)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                   @SwaggerApiResponse(responseCode = "409", description = "Product with ID already exists", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class)))
+               })
+    public ResponseEntity<ApiResponse<ProductDto>> addProduct(
+            @Parameter(description = "User role (ADMIN)", required = true, in = ParameterIn.HEADER, example = "ADMIN")
+            @RequestHeader("X-User-Role") String role,
+            @Parameter(description = "User name", required = true, in = ParameterIn.HEADER, example = "admin_user")
+            @RequestHeader("X-User-Name") String name,
+            @RequestBody ProductDto productDto) {
+
+        RoleValidator.validateRole(role, Role.ADMIN);
+
+        try {
+            // Convert DTO to Model
+            Product product = new Product(productDto.getId(), productDto.getName(), productDto.getPrice(), productDto.getStock());
+            Product addedProduct = productService.addProduct(product);
+
+            // Convert Model back to DTO for response
+            ProductDto responseDto = new ProductDto(addedProduct.getId(), addedProduct.getName(), addedProduct.getPrice(), addedProduct.getStock());
+
+            return ResponseEntity.status(HttpStatus.CREATED)
+                                 .body(ApiResponse.success("Product added successfully", responseDto));
+        } catch (ResponseStatusException e) {
+             return ResponseEntity.status(e.getStatusCode()).body(ApiResponse.error(e.getReason()));
+        } catch (Exception e) {
+             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("An unexpected error occurred: " + e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Update an existing product (Admin only)",
+               responses = {
+                   @SwaggerApiResponse(responseCode = "200", description = "Product updated successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                   @SwaggerApiResponse(responseCode = "400", description = "Invalid product data", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                   @SwaggerApiResponse(responseCode = "403", description = "Forbidden (Requires ADMIN role)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                   @SwaggerApiResponse(responseCode = "404", description = "Product not found", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class)))
+               })
+    public ResponseEntity<ApiResponse<ProductDto>> updateProduct(
+            @Parameter(description = "User role (ADMIN)", required = true, in = ParameterIn.HEADER, example = "ADMIN")
+            @RequestHeader("X-User-Role") String role,
+            @Parameter(description = "User name", required = true, in = ParameterIn.HEADER, example = "admin_user")
+            @RequestHeader("X-User-Name") String name,
+            @Parameter(description = "Product ID to update", required = true, in = ParameterIn.PATH, example = "prod-123")
+            @PathVariable String id,
+            @RequestBody ProductDto productDto) {
+
+        RoleValidator.validateRole(role, Role.ADMIN);
+
+         try {
+            // Convert DTO to Model (ID from path, details from body)
+            Product product = new Product(id, productDto.getName(), productDto.getPrice(), productDto.getStock());
+            Product updatedProduct = productService.updateProduct(id, product);
+
+            // Convert Model back to DTO for response
+            ProductDto responseDto = new ProductDto(updatedProduct.getId(), updatedProduct.getName(), updatedProduct.getPrice(), updatedProduct.getStock());
+
+            return ResponseEntity.ok(ApiResponse.success("Product updated successfully", responseDto));
+         } catch (ResponseStatusException e) {
+             return ResponseEntity.status(e.getStatusCode()).body(ApiResponse.error(e.getReason()));
+         } catch (Exception e) {
+             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("An unexpected error occurred: " + e.getMessage()));
+         }
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete a product (Admin only)",
+               responses = {
+                   @SwaggerApiResponse(responseCode = "200", description = "Product deleted successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                   @SwaggerApiResponse(responseCode = "403", description = "Forbidden (Requires ADMIN role)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                   @SwaggerApiResponse(responseCode = "404", description = "Product not found", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class)))
+               })
+    public ResponseEntity<ApiResponse<Void>> deleteProduct(
+            @Parameter(description = "User role (ADMIN)", required = true, in = ParameterIn.HEADER, example = "ADMIN")
+            @RequestHeader("X-User-Role") String role,
+            @Parameter(description = "User name", required = true, in = ParameterIn.HEADER, example = "admin_user")
+            @RequestHeader("X-User-Name") String name,
+            @Parameter(description = "Product ID to delete", required = true, in = ParameterIn.PATH, example = "prod-123")
+            @PathVariable String id) {
+
+        RoleValidator.validateRole(role, Role.ADMIN);
+
+         try {
+            productService.deleteProduct(id);
+            return ResponseEntity.ok(ApiResponse.success("Product deleted successfully"));
+         } catch (ResponseStatusException e) {
+             return ResponseEntity.status(e.getStatusCode()).body(ApiResponse.error(e.getReason()));
+         } catch (Exception e) {
+             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("An unexpected error occurred: " + e.getMessage()));
+         }
+    }
+
+     @GetMapping
+    @Operation(summary = "Get all products (Admin only - or maybe public? Requirement implies admin manages, but doesn't restrict viewing)",
+               description = "Note: Accessing this endpoint currently requires ADMIN role based on validation, but product viewing is often public in real apps.",
+               responses = {
+                   @SwaggerApiResponse(responseCode = "200", description = "List of products retrieved successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                   @SwaggerApiResponse(responseCode = "403", description = "Forbidden (Requires ADMIN role)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class)))
+               })
+    public ResponseEntity<ApiResponse<List<ProductDto>>> getAllProducts(
+            @Parameter(description = "User role (ADMIN)", required = true, in = ParameterIn.HEADER, example = "ADMIN")
+            @RequestHeader("X-User-Role") String role,
+            @Parameter(description = "User name", required = true, in = ParameterIn.HEADER, example = "admin_user")
+            @RequestHeader("X-User-Name") String name) {
+
+        RoleValidator.validateRole(role, Role.ADMIN); // Assuming product listing is an admin function here per explicit role check requirement
+
+         try {
+            List<Product> products = productService.getAllProducts();
+            List<ProductDto> productDtos = products.stream()
+                                                .map(p -> new ProductDto(p.getId(), p.getName(), p.getPrice(), p.getStock()))
+                                                .collect(Collectors.toList());
+            return ResponseEntity.ok(ApiResponse.success("Products retrieved successfully", productDtos));
+         } catch (ResponseStatusException e) {
+             return ResponseEntity.status(e.getStatusCode()).body(ApiResponse.error(e.getReason()));
+         } catch (Exception e) {
+             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("An unexpected error occurred: " + e.getMessage()));
+         }
+    }
+}
+24. src/main/java/com/example/ecommerce/controller/UserController.java
+
+Controller for USER operations (cart and purchase). Requires X-User-Role: USER header.
+
+Java
+
+package com.example.ecommerce.controller;
+
+import com.example.ecommerce.dto.ApiResponse;
+import com.example.ecommerce.dto.PurchaseRequestDto;
+import com.example.ecommerce.model.CartItem;
+import com.example.ecommerce.model.enums.Role;
+import com.example.ecommerce.service.user.CartService;
+import com.example.ecommerce.service.user.PurchaseService;
+import com.example.ecommerce.util.RoleValidator;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+@RestController
+@RequestMapping("/user")
+@Tag(name = "User", description = "User Cart and Purchase API")
+public class UserController {
+
+    private final CartService cartService;
+    private final PurchaseService purchaseService;
+
+    @Autowired
+    public UserController(CartService cartService, PurchaseService purchaseService) {
+        this.cartService = cartService;
+        this.purchaseService = purchaseService;
+    }
+
+    // --- Cart Endpoints ---
+
+    @PostMapping("/cart")
+    @Operation(summary = "Add product to cart (User only)",
+               responses = {
+                   @SwaggerApiResponse(responseCode = "200", description = "Product added to cart successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                   @SwaggerApiResponse(responseCode = "400", description = "Invalid request or insufficient stock", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                   @SwaggerApiResponse(responseCode = "403", description = "Forbidden (Requires USER role)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                   @SwaggerApiResponse(responseCode = "404", description = "Product not found", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class)))
+               })
+    public ResponseEntity<ApiResponse<Void>> addToCart(
+            @Parameter(description = "User role (USER)", required = true, in = ParameterIn.HEADER, example = "USER")
+            @RequestHeader("X-User-Role") String role,
+            @Parameter(description = "User name", required = true, in = ParameterIn.HEADER, example = "regular_user")
+            @RequestHeader("X-User-Name") String name,
+            @Parameter(description = "Product ID to add", required = true, in = ParameterIn.QUERY, example = "prod-123")
+            @RequestParam String productId,
+            @Parameter(description = "Quantity to add", required = true, in = ParameterIn.QUERY, example = "1")
+            @RequestParam int quantity) {
+
+        RoleValidator.validateRole(role, Role.USER);
+
+        try {
+            cartService.addToCart(name, role, productId, quantity);
+            return ResponseEntity.ok(ApiResponse.success("Product added to cart successfully"));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(ApiResponse.error(e.getReason()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("An unexpected error occurred: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/cart/{productId}")
+    @Operation(summary = "Remove product from cart (User only)",
+               responses = {
+                   @SwaggerApiResponse(responseCode = "200", description = "Product removed from cart successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                   @SwaggerApiResponse(responseCode = "400", description = "Invalid request or product not in cart", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                   @SwaggerApiResponse(responseCode = "403", description = "Forbidden (Requires USER role)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class)))
+               })
+    public ResponseEntity<ApiResponse<Void>> removeFromCart(
+            @Parameter(description = "User role (USER)", required = true, in = ParameterIn.HEADER, example = "USER")
+            @RequestHeader("X-User-Role") String role,
+            @Parameter(description = "User name", required = true, in = ParameterIn.HEADER, example = "regular_user")
+            @RequestHeader("X-User-Name") String name,
+            @Parameter(description = "Product ID to remove from cart", required = true, in = ParameterIn.PATH, example = "prod-123")
+            @PathVariable String productId,
+             @Parameter(description = "Quantity to remove", required = true, in = ParameterIn.QUERY, example = "1")
+            @RequestParam int quantity) { // Allowing partial removal
+
+        RoleValidator.validateRole(role, Role.USER);
+
+        try {
+            cartService.removeFromCart(name, role, productId, quantity);
+            return ResponseEntity.ok(ApiResponse.success("Product removed from cart successfully"));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(ApiResponse.error(e.getReason()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("An unexpected error occurred: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/cart")
+    @Operation(summary = "View user's cart contents (User only)",
+               responses = {
+                   @SwaggerApiResponse(responseCode = "200", description = "Cart contents retrieved successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                   @SwaggerApiResponse(responseCode = "403", description = "Forbidden (Requires USER role)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class)))
+               })
+    public ResponseEntity<ApiResponse<Map<String, CartItem>>> getUserCart(
+            @Parameter(description = "User role (USER)", required = true, in = ParameterIn.HEADER, example = "USER")
+            @RequestHeader("X-User-Role") String role,
+            @Parameter(description = "User name", required = true, in = ParameterIn.HEADER, example = "regular_user")
+            @RequestHeader("X-User-Name") String name) {
+
+        RoleValidator.validateRole(role, Role.USER);
+
+        try {
+            Map<String, CartItem> cart = cartService.getUserCart(name, role);
+            return ResponseEntity.ok(ApiResponse.success("Cart contents retrieved successfully", cart));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(ApiResponse.error(e.getReason()));
+        } catch (Exception e) {
+             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("An unexpected error occurred: " + e.getMessage()));
+        }
+    }
+
+    // --- Purchase Endpoints ---
+
+    @PostMapping("/checkout/now")
+    @Operation(summary = "Checkout product directly without adding to cart (User only)",
+               responses = {
+                   @SwaggerApiResponse(responseCode = "200", description = "Direct purchase successful", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                   @SwaggerApiResponse(responseCode = "400", description = "Invalid request, insufficient stock, or insufficient budget", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                   @SwaggerApiResponse(responseCode = "403", description = "Forbidden (Requires USER role)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                   @SwaggerApiResponse(responseCode = "404", description = "Product not found", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class)))
+               })
+    public ResponseEntity<ApiResponse<Void>> checkoutNow(
+            @Parameter(description = "User role (USER)", required = true, in = ParameterIn.HEADER, example = "USER")
+            @RequestHeader("X-User-Role") String role,
+            @Parameter(description = "User name", required = true, in = ParameterIn.HEADER, example = "regular_user")
+            @RequestHeader("X-User-Name") String name,
+            @RequestBody PurchaseRequestDto requestDto) { // Should contain productId and quantity
+
+        RoleValidator.validateRole(role, Role.USER);
+
+        try {
+            ApiResponse<?> response = purchaseService.checkoutNow(name, role, requestDto);
+            return ResponseEntity.ok(response);
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(ApiResponse.error(e.getReason()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("An unexpected error occurred: " + e.getMessage()));
+        }
+    }
+
+     @PostMapping("/checkout/all")
+     @Operation(summary = "Checkout all items in the cart (User only)",
+                responses = {
+                    @SwaggerApiResponse(responseCode = "200", description = "All cart items purchased successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                    @SwaggerApiResponse(responseCode = "400", description = "Cart is empty, insufficient stock, or insufficient budget", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                    @SwaggerApiResponse(responseCode = "403", description = "Forbidden (Requires USER role)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                    @SwaggerApiResponse(responseCode = "404", description = "Product in cart not found (unexpected)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class)))
+                })
+     public ResponseEntity<ApiResponse<Void>> checkoutAllCart(
+            @Parameter(description = "User role (USER)", required = true, in = ParameterIn.HEADER, example = "USER")
+             @RequestHeader("X-User-Role") String role,
+            @Parameter(description = "User name", required = true, in = ParameterIn.HEADER, example = "regular_user")
+             @RequestHeader("X-User-Name") String name) {
+
+         RoleValidator.validateRole(role, Role.USER);
+
+         try {
+             ApiResponse<?> response = purchaseService.checkoutAllCart(name, role);
+             return ResponseEntity.ok(response);
+         } catch (ResponseStatusException e) {
+             return ResponseEntity.status(e.getStatusCode()).body(ApiResponse.error(e.getReason()));
+         } catch (Exception e) {
+             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("An unexpected error occurred: " + e.getMessage()));
+         }
+     }
+
+    @PostMapping("/checkout/item")
+    @Operation(summary = "Checkout a specific item/quantity from the cart (User only)",
+               description = "Specify productId and quantity from your cart to purchase.",
+               responses = {
+                   @SwaggerApiResponse(responseCode = "200", description = "Cart item purchased successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                   @SwaggerApiResponse(responseCode = "400", description = "Invalid request, product not in cart, insufficient stock, or insufficient budget", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                   @SwaggerApiResponse(responseCode = "403", description = "Forbidden (Requires USER role)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                   @SwaggerApiResponse(responseCode = "404", description = "Product not found (unexpected)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class)))
+               })
+    public ResponseEntity<ApiResponse<Void>> checkoutSingleCartItem(
+            @Parameter(description = "User role (USER)", required = true, in = ParameterIn.HEADER, example = "USER")
+            @RequestHeader("X-User-Role") String role,
+            @Parameter(description = "User name", required = true, in = ParameterIn.HEADER, example = "regular_user")
+            @RequestHeader("X-User-Name") String name,
+            @RequestBody PurchaseRequestDto requestDto) { // Should contain productId and quantity
+
+        RoleValidator.validateRole(role, Role.USER);
+
+        try {
+            ApiResponse<?> response = purchaseService.checkoutSingleCartItem(name, role, requestDto);
+            return ResponseEntity.ok(response);
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(ApiResponse.error(e.getReason()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("An unexpected error occurred: " + e.getMessage()));
+        }
+    }
+
+     @GetMapping("/budget")
+     @Operation(summary = "View user's current budget (User only)",
+                responses = {
+                    @SwaggerApiResponse(responseCode = "200", description = "Budget retrieved successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+                    @SwaggerApiResponse(responseCode = "403", description = "Forbidden (Requires USER role)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class)))
+                })
+    public ResponseEntity<ApiResponse<Double>> getUserBudget(
+             @Parameter(description = "User role (USER)", required = true, in = ParameterIn.HEADER, example = "USER")
+             @RequestHeader("X-User-Role") String role,
+             @Parameter(description = "User name", required = true, in = ParameterIn.HEADER, example = "regular_user")
+             @RequestHeader("X-User-Name") String name) {
+
+         RoleValidator.validateRole(role, Role.USER);
+
+         try {
+             UserSession userSession = userSessionService.getUserSession(name, Role.USER);
+             return ResponseEntity.ok(ApiResponse.success("Current budget retrieved successfully", userSession.getBudget()));
+         } catch (ResponseStatusException e) {
+             return ResponseEntity.status(e.getStatusCode()).body(ApiResponse.error(e.getReason()));
+         } catch (Exception e) {
+             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("An unexpected error occurred: " + e.getMessage()));
+         }
+     }
+}
+25. src/main/resources/application.properties
+
+Basic configuration.
+
+Properties
+
+server.port=8080
+spring.main.allow-bean-definition-overriding=true # Needed if strategies cause issues, though component names should prevent it
+
+# Optional: Configure springdoc-openapi paths if needed
+# springdoc.packages-to-scan=com.example.ecommerce
+# springdoc.paths-to-match=/admin/**, /user/**
+How to Run:
+
+Save the files in the specified directory structure within a Maven project.
+Navigate to the project root in your terminal.
+Run mvn clean install.
+Run mvn spring-boot:run.
+The application will start, and Swagger UI will be available (usually at http://localhost:8080/swagger-ui.html).
+
+Using the API via Swagger UI or cURL:
+
+Admin Operations: Send requests to /admin/products with the header X-User-Role: ADMIN and X-User-Name: any_admin_name.
+User Operations: Send requests to /user/... with the header X-User-Role: USER and X-User-Name: any_user_name. (Remember the budget is per name+role combination).
+Key Design Considerations & SOLID:
+
+Single Responsibility (S): Controllers handle HTTP requests, Services contain business logic, Models represent data, Utilities perform specific tasks (validation). ProductService handles product CRUD, CartService handles cart modifications, PurchaseService orchestrates checkout using strategies.
+Open/Closed (O): The Strategy pattern (CheckoutStrategy) is used for checkout. Adding a new way to checkout (e.g., buy N specific items from cart, buy based on a discount coupon) can be done by adding a new CheckoutStrategy implementation without modifying the PurchaseService class itself.
+Liskov Substitution (L): DirectCheckoutStrategy, AllCartCheckoutStrategy, SingleCartItemCheckoutStrategy are substitutable for CheckoutStrategy.
+Interface Segregation (I): Interfaces like ProductService and CheckoutStrategy define clear contracts.
+Dependency Inversion (D): High-level components (Controllers, PurchaseService) depend on abstractions (Service interfaces, CheckoutStrategy interface) rather than concrete implementations. Dependencies are injected via Spring's @Autowired.
+This implementation provides a solid foundation that is extensible (especially with the Strategy pattern for checkout) and adheres to the requested constraints and structure. Remember that the in-memory nature means data is volatile. For a production application, a database would be required.
