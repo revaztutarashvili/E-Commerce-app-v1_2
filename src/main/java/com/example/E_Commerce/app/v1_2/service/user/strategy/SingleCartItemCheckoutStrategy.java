@@ -6,7 +6,7 @@ import com.example.E_Commerce.app.v1_2.model.CartItem;
 import com.example.E_Commerce.app.v1_2.model.Product;
 import com.example.E_Commerce.app.v1_2.model.UserSession;
 import com.example.E_Commerce.app.v1_2.service.product.ProductService;
-import com.example.E_Commerce.app.v1_2.util.BudgetValidator; // საჭიროა სტატიკური მეთოდის გამოძახებისთვის
+import com.example.E_Commerce.app.v1_2.util.BudgetValidator;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
@@ -18,12 +18,12 @@ public class SingleCartItemCheckoutStrategy implements CheckoutStrategy {
 
     @Override
     public boolean canHandle(PurchaseRequestDto request, UserSession userSession) {
-        // ეს ლოგიკა რჩება იგივე
+       
         return request != null && request.getProductId() != null && request.getQuantity() != null && request.getQuantity() > 0;
     }
 
     @Override
-    // BudgetValidator budgetValidator პარამეტრი ამოღებულია
+    
     public ApiResponse execute(PurchaseRequestDto request, UserSession userSession, ProductService productService) {
         String productId = request.getProductId();
         int quantityToBuy = request.getQuantity();
