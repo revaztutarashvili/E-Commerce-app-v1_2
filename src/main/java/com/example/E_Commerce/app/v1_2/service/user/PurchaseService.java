@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+//არის მთავარი სერვისი, რომელიც იწყებს ყიდვის პროცესს და იყენებს სხვადასხვა CheckoutStrategy იმპლემენტაციას (რომლებიც განთავსებულია service/user/strategy პაკეტში) 
+//ყიდვის რეალური ლოგიკის შესასრულებლად, მოთხოვნის სპეციფიკის მიხედვით.
 
 @Service
 public class PurchaseService {
