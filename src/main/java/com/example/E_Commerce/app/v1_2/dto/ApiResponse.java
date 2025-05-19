@@ -1,5 +1,5 @@
 package com.example.E_Commerce.app.v1_2.dto;
-
+//კაროჩე აქ  ვიყენებ ჯენერიქს ამ კლასში, სადაც T მოქმედებს როგორც ადგილი, რომელშიც მოგვიანებით ჩაჯდება რეალური მონაცემთა ტიპი (მაგალითად, ProductDto, List<ProductDto> და ასე შემდეგ )
 public class ApiResponse<T> {
     private boolean success;
 
