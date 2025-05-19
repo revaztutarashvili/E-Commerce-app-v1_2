@@ -23,25 +23,25 @@ public class DirectCheckoutStrategy implements CheckoutStrategy {
         String productId = request.getProductId();
         int quantity = request.getQuantity();
 
-        // 1. Get product
+        // 1. მომაქვს პროდუქტები სიიდან
         Product product = productService.getProductById(productId); // აგდებს შეცდომას თუ არ არსებობს
 
-        // 2. Check stock
+        // 2. აქ ვამოწმებ მარაგს, ნაშთს
         productService.checkStock(productId, quantity); // აგდებს შეცდომას თუ მარაგი არასაკმარისია
 
-        // 3. Calculate cost
+        // 3. გამოვითვლი ღირებულებას
         double totalCost = product.getPrice() * quantity;
 
-        // 4. Check budget
+        // 4.შევამოწმებ ბიუჯეტი რამდენი აქვს იუზერს 
       
         BudgetValidator.checkBudget(userSession.getBudget(), totalCost); // აგდებს შეცდომას თუ ბიუჯეტი არასაკმარისია
 
-        // 5. Perform purchase actions (update budget and stock)
+        // 5. ვასრულებ შეძენის ოპერაციას ანუ(განვაახლებ ბიუჯეტს და ასევე ნაშთსაც)
         userSession.setBudget(userSession.getBudget() - totalCost);
-        // მარაგი უკვე შემოწმებულია checkStock-ში, updateStock ამცირებს რაოდენობას
-        productService.updateStock(productId, -quantity); // ვამცირებ მარაგს
+        // მარაგი უკვე შემოწმებულია checkStock-ში, updateStock კიიი ამცირებს რაოდენობასსსსსს
+        productService.updateStock(productId, -quantity); // აქ ვამცირებ მარაგსსსსს
 
-        // 6. Return success response
+        // 6. ვაბრუნებ რომ წარმატებით დასრულდა ოპერაცია
         return ApiResponse.success("Successfully purchased " + quantity + " of " + product.getName() + " directly. Remaining budget: " + userSession.getBudget());
     }
 }
