@@ -12,7 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collections;
 import java.util.Map;
-
+//ეს კლასი მართავს პროდუქტების დამატებას/წაშლას ამ კალათიდან (მარაგის შემოწმებით)
 @Service
 public class CartServiceImpl implements CartService {
 
