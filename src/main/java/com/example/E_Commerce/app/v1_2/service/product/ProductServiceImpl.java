@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class ProductServiceImpl implements ProductService {
 
-    // In-memory storage for products
+    // პროდუქტებს ვა-MAP-ებ, და ID გადავცემ ქეიდ(ვიყენებ მემორიში საწყის ეტაპზე რომ იყოს სტოკად რამე პროდუქტები
     private final Map<String, Product> products = new ConcurrentHashMap<>();
 
     // აპის გაშვებისას რომ იყოს სატესტოდ რამდენიმე პროდუქტი
