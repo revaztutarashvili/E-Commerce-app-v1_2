@@ -6,7 +6,6 @@ import com.example.E_Commerce.app.v1_2.model.CartItem;
 import com.example.E_Commerce.app.v1_2.model.Product;
 import com.example.E_Commerce.app.v1_2.model.UserSession;
 import com.example.E_Commerce.app.v1_2.service.product.ProductService;
-import com.example.E_Commerce.app.v1_2.util.BudgetValidator; // საჭიროა სტატიკური მეთოდის გამოძახებისთვის
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
@@ -18,12 +17,12 @@ public class AllCartCheckoutStrategy implements CheckoutStrategy {
 
     @Override
     public boolean canHandle(PurchaseRequestDto request, UserSession userSession) {
-        // ეს ლოგიკა რჩება იგივე, როგორც ადრე განსაზღვრეთ
+      
         return request == null || (request.getProductId() == null && request.getQuantity() == null);
     }
 
     @Override
-    // BudgetValidator budgetValidator პარამეტრი ამოღებულია
+
     public ApiResponse execute(PurchaseRequestDto request, UserSession userSession, ProductService productService) {
         Map<String, CartItem> userCart = userSession.getCart();
 
@@ -36,17 +35,17 @@ public class AllCartCheckoutStrategy implements CheckoutStrategy {
         // 1. Calculate total cost and perform stock checks for all items FIRST
         for (Map.Entry<String, CartItem> entry : userCart.entrySet()) {
             CartItem item = entry.getValue();
-            // დარწმუნდით, რომ პროდუქტი ჯერ კიდევ არსებობს
+            // აქ ვრწმუნდები, რომ პროდუქტი ჯერ კიდევ არსებობს
             Product product = productService.getProductById(item.getProduct().getId());
 
-            // შეამოწმეთ მარაგი კალათაში არსებული რაოდენობისთვის
+            // აქ კი ვამოწმებ მარაგს კალათაში არსებული რაოდენობისთვის
             productService.checkStock(product.getId(), item.getQuantity()); // აგდებს შეცდომას თუ მარაგი არასაკმარისია
 
             totalCost += item.getTotalPrice();
         }
 
-        // 2. Check total budget
-        // გამოიძახეთ სტატიკური მეთოდი პირდაპირ კლასის სახელით
+    
+        // ვამოწმებ ბიუჯეტს
         BudgetValidator.checkBudget(userSession.getBudget(), totalCost); // აგდებს შეცდომას თუ ბიუჯეტი არასაკმარისია
 
         // 3. Perform purchase actions (update budget and stock for all items, clear cart)
@@ -54,11 +53,11 @@ public class AllCartCheckoutStrategy implements CheckoutStrategy {
 
         for (Map.Entry<String, CartItem> entry : userCart.entrySet()) {
             CartItem item = entry.getValue();
-            // შეამცირეთ მარაგი თითოეული შეძენილი ნივთისთვის
+            // ვაკეთებ დიქრიზს ნაშთში თითოეული შეძენილი ნივთისთვის
             productService.updateStock(item.getProduct().getId(), -item.getQuantity());
         }
 
-        // დაცალეთ კალათა წარმატებული შეძენის შემდეგ
+        // ვასუფთავებ კალათს შეძენის ოპერაციის მერე
         userCart.clear();
 
         // 4. Return success response
