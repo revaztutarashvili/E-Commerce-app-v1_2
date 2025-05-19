@@ -88,4 +88,4 @@ ProductDto — პროდუქტის გადაცემა კონტ
 
 PurchaseRequestDto — ყიდვის მოთხოვნა
 
-ApiResponse — სტანდარტული პასუხის ობიექტი
+ApiResponse — სტანდარტული response-ის ობიექტი
