@@ -8,7 +8,8 @@ import com.example.E_Commerce.app.v1_2.service.product.ProductService;
 public interface CheckoutStrategy {
 
     /**
-     * Determines if this strategy can handle the given purchase request.
+     * ვამოწმებ შეუძლია თუ არა ამ კონკრეტულ სტრატეგიას მოცემული ყიდვის მოთხოვნის დამუშავება.
+     * კანკრეტნა:
      * @param request The purchase request DTO.
      * @param userSession The current user session.
      * @return true if this strategy applies, false otherwise.
@@ -16,7 +17,8 @@ public interface CheckoutStrategy {
     boolean canHandle(PurchaseRequestDto request, UserSession userSession);
 
     /**
-     * Executes the checkout logic for this strategy.
+     * ასრულებს ყიდვის სპეციფიკურ ლოგიკას, თუ canHandle()-მა true დააბრუნა.
+     * კანკრეტნა:
      * @param request The purchase request DTO.
      * @param userSession The current user session.
      * @param productService The product service to interact with stock.
