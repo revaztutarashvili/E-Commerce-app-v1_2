@@ -7,6 +7,7 @@ import com.example.E_Commerce.app.v1_2.model.Product;
 import com.example.E_Commerce.app.v1_2.model.UserSession;
 import com.example.E_Commerce.app.v1_2.service.product.ProductService;
 import org.springframework.stereotype.Component;
+import com.example.E_Commerce.app.v1_2.util.BudgetValidator;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
