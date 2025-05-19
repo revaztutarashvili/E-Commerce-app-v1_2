@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class UserSessionService {
 
-    // In-memory storage for user sessions
+    // მოკლედ, ეს კლასი მართავს მომხმარებლის დროებით მონაცემებს (კალათა, ბიუჯეტი) მეხსიერებაში. 
     // Key: Role:Username
     private final Map<String, UserSession> userSessions = new ConcurrentHashMap<>();
 
