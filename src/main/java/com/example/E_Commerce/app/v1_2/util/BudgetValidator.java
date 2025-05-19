@@ -12,7 +12,7 @@ public class BudgetValidator {
     }
 
     /*
-     * Checks if the user's current budget is sufficient for the given cost.
+     * ვამოწმებთ შეესაბამება თუ არა მითითებულ ფასს იუზერის ბიუჯეტი
      * Throws ResponseStatusException (HTTP 400 Bad Request) if budget is insufficient.
      *
      * @param currentBudget The user's current budget.
